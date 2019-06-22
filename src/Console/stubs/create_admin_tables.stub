@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * Created by PhpStorm.
+ * Author: 紫云沫雪こ
+ * Email:email1946367301@163.com
+ * Date: 2019/3/21 0021
+ * Time: 16:47
+ */
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+
+
+class CreateAdminTables extends Migration
+{
+    /**
+     * 创建后台基础表
+     */
+    public function up()
+    {
+      <%up%>
+    }
+
+    protected function down()
+    {
+       <%down%>
+
+    }
+}
