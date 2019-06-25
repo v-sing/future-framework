@@ -47,13 +47,7 @@ class InstallCommand extends Command
      */
     public function initDatabase()
     {
-        try {
-            $connection = config('admin.database.connection') ?: config('database.default');
-            Schema::getFacadeAccessor($connection);
-        } catch (\Exception $exception) {
-            $this->line('数据库连接失败！，请检查数据库配置。');
-            return;
-        }
+
         $this->call('migrate');
 
         $userModel = config('admin.database.admin_model');
@@ -71,11 +65,10 @@ class InstallCommand extends Command
      */
     protected function initAdminDirectory()
     {
-
         $this->directory = config('admin.directory');
         if (is_dir($this->directory)) {
             $this->line("<error>{$this->directory} directory already exists !</error> ");
-            return;
+            exit;
         }
         $this->info(AdminCommand::$logo);
         $this->initEnv();
@@ -169,6 +162,7 @@ class InstallCommand extends Command
 
     protected function initEnv()
     {
+
         $connection = $this->choice('DB_CONNECTION', [
             'mysql', 'sqlite', 'pgsql', 'sqlsrv'
         ], 0);
@@ -207,6 +201,17 @@ class InstallCommand extends Command
             }
         }
         $env = implode("\r\n", $data);
+        if (file_exists('.env')) {
+            $this->laravel['files']->delete('.env');
+        }
+
         $this->laravel['files']->put('.env', $env);
+        try {
+            $connection = config('admin.database.connection') ?: config('database.default');
+            Schema::connection($connection);
+        } catch (\Exception $exception) {
+            $this->line('数据库连接失败！，请检查数据库配置。');
+            exit;
+        }
     }
 }
