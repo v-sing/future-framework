@@ -4,6 +4,7 @@ namespace Future\Admin\Console;
 
 use Future\Admin\Admin;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class InstallCommand extends Command
 {
@@ -35,9 +36,8 @@ class InstallCommand extends Command
      */
     public function handle()
     {
-        $this->initDatabase();
-
         $this->initAdminDirectory();
+        $this->initDatabase();
     }
 
     /**
@@ -47,6 +47,13 @@ class InstallCommand extends Command
      */
     public function initDatabase()
     {
+        try {
+            $connection = config('admin.database.connection') ?: config('database.default');
+            Schema::getFacadeAccessor($connection);
+        } catch (\Exception $exception) {
+            $this->line('数据库连接失败！，请检查数据库配置。');
+            return;
+        }
         $this->call('migrate');
 
         $userModel = config('admin.database.admin_model');
@@ -64,15 +71,14 @@ class InstallCommand extends Command
      */
     protected function initAdminDirectory()
     {
-        $this->directory = config('admin.directory');
 
+        $this->directory = config('admin.directory');
         if (is_dir($this->directory)) {
             $this->line("<error>{$this->directory} directory already exists !</error> ");
-
             return;
         }
         $this->info(AdminCommand::$logo);
-
+        $this->initEnv();
         $this->makeDir('/');
         $this->line('<info>Admin directory was created:</info> ' . str_replace(base_path(), '', $this->directory));
         $this->makeDir('Controllers');
@@ -110,7 +116,7 @@ class InstallCommand extends Command
      */
     protected function createRoutesFile()
     {
-        $file = $this->directory . '/routes.php';
+        $file     = $this->directory . '/routes.php';
         $contents = $this->getStub('routes');
         $this->laravel['files']->put($file, str_replace('DummyNamespace', config('admin.route.namespace'), $contents));
         $this->line('<info>Routes file was created:</info> ' . str_replace(base_path(), '', $file));
@@ -125,15 +131,15 @@ class InstallCommand extends Command
      */
     protected function createResourcesFile()
     {
-        $file = $this->directory . '/Resources/lang/en-US/demo.php';
+        $file     = $this->directory . '/Resources/lang/en-US/demo.php';
         $contents = $this->getStub('install/resources/lang/en-US/demo');
         $this->laravel['files']->put($file, str_replace('DummyNamespace', config('admin.route.namespace'), $contents));
         $this->line('<info>Resources file was created:</info> ' . str_replace(base_path(), '', $file));
-        $file = $this->directory . '/Resources/lang/zh-cn/demo.php';
+        $file     = $this->directory . '/Resources/lang/zh-cn/demo.php';
         $contents = $this->getStub('install/resources/lang/zh-cn/demo');
         $this->laravel['files']->put($file, str_replace('DummyNamespace', config('admin.route.namespace'), $contents));
         $this->line('<info>Resources file was created:</info> ' . str_replace(base_path(), '', $file));
-        $file = $this->directory . '/Resources/views/demo/index.blade.php';
+        $file     = $this->directory . '/Resources/views/demo/index.blade.php';
         $contents = $this->getStub('install/resources/view/demo/index.blade');
         $this->laravel['files']->put($file, str_replace('DummyNamespace', config('admin.route.namespace'), $contents));
         $this->line('<info>Resources file was created:</info> ' . str_replace(base_path(), '', $file));
@@ -159,5 +165,48 @@ class InstallCommand extends Command
     protected function makeDir($path = '')
     {
         $this->laravel['files']->makeDirectory("{$this->directory}/$path", 0755, true, true);
+    }
+
+    protected function initEnv()
+    {
+        $connection = $this->choice('DB_CONNECTION', [
+            'mysql', 'sqlite', 'pgsql', 'sqlsrv'
+        ], 0);
+        $host       = $this->ask('DB_HOST');
+        $port       = $this->ask('DB_PORT');
+        $database   = $this->ask('DB_DATABASE');
+        $username   = $this->ask('DB_USERNAME');
+        $password   = $this->secret('DB_PASSWORD');
+        $env        = $this->laravel['files']->get('.env');
+        $data       = explode("\r\n", $env);
+        foreach ($data as $key => $value) {
+            if ($value != '') {
+                $data[$key] = explode('=', $value);
+                switch ($data[$key][0]) {
+                    case 'DB_CONNECTION':
+                        $data[$key][1] = $connection;
+                        break;
+                    case 'DB_HOST':
+                        $data[$key][1] = $host;
+                        break;
+                    case 'DB_PORT':
+                        $data[$key][1] = $port;
+                        break;
+                    case 'DB_DATABASE':
+                        $data[$key][1] = $database;
+                        break;
+                    case 'DB_USERNAME':
+                        $data[$key][1] = $username;
+                        break;
+                    case 'DB_PASSWORD':
+                        $data[$key][1] = $password;
+                        break;
+
+                }
+                $data[$key] = implode('=', $data[$key]);
+            }
+        }
+        $env = implode("\r\n", $data);
+        $this->laravel['files']->put('.env', $env);
     }
 }

@@ -15,6 +15,7 @@
         "fideloper/proxy": "^4.0",
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0",
+        "mews/captcha": "^2.2",
         "overtrue/laravel-pinyin": "^4.0"
 	},
 	"autoload": {
@@ -29,14 +30,15 @@
         "laravel": {
             "providers": [
                 "Future\\Admin\\AdminServiceProvider",
-				"Overtrue\\LaravelPinyin\\ServiceProvider"
+				"Overtrue\\LaravelPinyin\\ServiceProvider",
+                "Mews\\Captcha\\CaptchaServiceProvider"
             ],
             "aliases": {
                 "Admin": "Future\\Admin\\Facades\\Admin",
 				"Pinyin":"Overtrue\\LaravelPinyin\\Facades\\Pinyin",
-				"Form":"Future\\Admin\\Form\\FormFacade"
+				"Form":"Future\\Admin\\Form\\FormFacade",
+                "Captcha":"Mews\\Captcha\\Facades\\Captcha"
             }
-
         }
     }
 }
